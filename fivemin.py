@@ -70,6 +70,7 @@ class Experiment(object):
             split = self.sort_splits([split[i] for i in range(index + 1)])
 
             # calculate volumes
+            #TODO include H2O volumes for 1st split (sum largest volume in each ingredient at each split?)
             split_sizes = [len(s[0][1]) for s in split]
             total_volume = np.array([self.pipette_loss ** i *
                                      self.reaction_volume * np.prod(split_sizes)
