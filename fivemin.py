@@ -2,6 +2,7 @@ import csv
 import re
 import pandas as pd
 import numpy as np
+import sympy as sp
 
 test_form = 'reaction_setup2.csv'
 output_csv = 'output2.csv'
@@ -125,6 +126,24 @@ class Experiment(object):
         return layout
 
 
+class Instruction(object):
+    def __init__(self):
+        self.text = 'Add '
+        self.split = (None, None)
+        self.split_size = 0.
+        self.split_volume = 0.
+        self.split_label = 'M1'
+    def get_text(self):
+        text1 = 'Split each mix into %d sub-mixes with %.2g uL each.' % \
+                (self.split_size, self.split_volume)
+
+        mix_labels = ['%s-%d' % (self.split_size, i) for i in range(self.split_size)]
+        text2 = 'Label the new sub-mixes %s.' % ', '.join(mix_labels)
+        text3 = 'Add the following to each sub-mix:\n'
+        pd.DataFrame()
+    def get_html(self):
+        pass
+
 class Concentration(object):
     def __init__(self, input_string):
         self.units = None
@@ -168,6 +187,9 @@ class Component(object):
 
     def __repr__(self):
         return "%s" % self.name
+
+class Product(object):
+    pass
 
 
 def test():
