@@ -7,19 +7,27 @@ test_form = 'reaction_setup2.csv'
 output_csv = 'output2.csv'
 concentration_pattern = '([0-9]*\.*[0-9]*)(.*)'
 named_series_pattern = '((.*):)*(.*)'
+reaction_volume = 10
+pipette_loss = 1.1
 
 
 class Experiment(object):
-    def __init__(self, form):
+    def __init__(self, form, reaction_volume=10, pipette_loss=1.):
         """Container for experiment, including all parameters and generated information.
         :param form:
         :return:
         """
+        self.info = {}
+        self.split_volume = {}
+        self.total_volume = {}
         self.components = []
         self.splits = {}
         self.reactions = {}
+        self.volumes = {}
+        self.reaction_volume = reaction_volume
+        self.pipette_loss = pipette_loss
+
         self.setup(form)
-        self.reaction_volume = 10
 
 
     def setup(self, form):
@@ -33,16 +41,14 @@ class Experiment(object):
         experiments = filter(lambda s: 'experiment' in s, form.columns)
 
         for experiment in experiments:
-            # convert concentrations to fold dilutions
-            concentrations = {}
+            # TODO convert concentrations to fold dilutions
             index, indices, named_index = 0, {}, {}
             # singletons will be given index 0
             split = {0: []}
-            # TODO allow for "parallel" concentration ranges (A: 1, 2, 3 and A: 1, 1, 2)
             for entry, component in zip(form.fillna(value='1X')[experiment], self.components):
                 # generic format A: 1, 2, 3
                 name, series = re.match(named_series_pattern, entry).groups()[1:3]
-                ingredient = (component, [Concentration(c.strip()) for c in series.split(',')])
+                ingredient = [component, [Concentration(c.strip()) for c in series.split(',')]]
                 # assign unique index to each step in the reaction, sort later
                 if name is not None:
                     if name in named_index:
@@ -62,6 +68,22 @@ class Experiment(object):
                     split[index] = [ingredient]
 
             split = self.sort_splits([split[i] for i in range(index + 1)])
+
+            # calculate volumes
+            split_sizes = [len(s[0][1]) for s in split]
+            total_volume = np.array([self.pipette_loss ** i *
+                                     self.reaction_volume * np.prod(split_sizes)
+                                     for i in reversed(range(len(split)))])
+            split_volume = np.array(total_volume) / np.cumprod(split_sizes)
+            total_volume = total_volume
+
+            for ingredients, vol in zip(split, split_volume):
+                for ing in ingredients:
+                    stock_c = ing[0].stock.value
+                    ing.append(np.around([vol * (c.value / stock_c) for c in ing[1]], decimals=2))
+            self.info[experiment] = {'split_volume': split_volume,
+                                     'total_volume': total_volume,
+                                     'split_sizes': split_sizes}
             self.splits[experiment] = split
             self.reactions[experiment] = self.expand(split)
 
@@ -149,7 +171,7 @@ class Component(object):
 
 def test():
     form = pd.read_table(test_form, sep=',')
-    exp = Experiment(form)
+    exp = Experiment(form, reaction_volume=reaction_volume, pipette_loss=1.1)
     csv.writer(open(output_csv, 'wb')).writerows(exp.layout())
     return exp
 
