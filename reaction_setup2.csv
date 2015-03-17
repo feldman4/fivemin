@@ -2,5 +2,5 @@ rank,reagent,stock,experiment 1,experiment 2
 ,jumpstart,2X,,
 1,EVA,50X,1X,"A: 1X, 2X"
 2,ROX,100X,,"B: 1X, 4X"
--1,primers,100 uM,"1 uM, 0.5 uM","0.5 uM, 1 uM"
+,primers,100 uM,"1 uM, 0.5 uM","0.5 uM, 1 uM"
 ,template,10X,,"1 uL, 2 uL, 3 uL, 4 uL"

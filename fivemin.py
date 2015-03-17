@@ -61,9 +61,17 @@ class Experiment(object):
                     index += 1
                     split[index] = [ingredient]
 
-            split = [split[i] for i in range(index + 1)]
+            split = self.sort_splits([split[i] for i in range(index + 1)])
             self.splits[experiment] = split
             self.reactions[experiment] = self.expand(split)
+
+    def sort_splits(self, split):
+        # permute, sorting by lowest rank of split then size
+
+        rank = [max([i[0].rank for i in ingredients]) for ingredients in split]
+        rank = [len(ingredients[0][1]) if r == 0 else 1000 + r for r, ingredients in zip(rank, split)]
+        sorted_split = [s for (r, s) in sorted(zip(rank, split))]
+        return sorted_split
 
     def expand(self, split):
         """Represent experiment layout as ndarray of Reactions with order of axes corresponding to
@@ -79,7 +87,6 @@ class Experiment(object):
                 ingredients = split[i]
                 for ingredient in ingredients:
                     reactions.ravel(order='F')[it.index].add_by_concentration(ingredient[0], ingredient[1][split_index])
-
         return reactions
 
     def layout(self):
