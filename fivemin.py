@@ -1,8 +1,10 @@
+import csv
 import re
 import pandas as pd
 import numpy as np
 
-test_form = 'reaction_setup.csv'
+test_form = 'reaction_setup2.csv'
+output_csv = 'output2.csv'
 concentration_pattern = '([0-9]*\.*[0-9]*)(.*)'
 named_series_pattern = '((.*):)*(.*)'
 
@@ -59,11 +61,10 @@ class Experiment(object):
                     index += 1
                     split[index] = [ingredient]
 
-            split = [split[i] for i in range(index+1)]
+            split = [split[i] for i in range(index + 1)]
             self.splits[experiment] = split
             self.reactions[experiment] = self.expand(split)
 
-    @staticmethod
     def expand(self, split):
         """Represent experiment layout as ndarray of Reactions with order of axes corresponding to
         split order. Associate each Component with an axis.
@@ -82,7 +83,16 @@ class Experiment(object):
         return reactions
 
     def layout(self):
-        pass
+        layout = []
+        for experiment, reactions in self.reactions.items():
+            layout.append([experiment])
+            block_shape = reactions.shape[-2:]
+            if len(block_shape) == 1:
+                block_shape = (1, block_shape[0])
+            new_shape = (reactions.size / block_shape[1], block_shape[1])
+            for line in reactions.reshape(new_shape).tolist():
+                layout.append(line)
+        return layout
 
 
 class Concentration(object):
@@ -97,7 +107,7 @@ class Concentration(object):
         self.units = self.units.strip()
 
     def __repr__(self):
-        return "%d %s" % (self.value, self.units)
+        return "%.2g %s" % (self.value, self.units)
 
 
 class Reaction(object):
@@ -113,6 +123,12 @@ class Reaction(object):
         """
         self.concentrations[component] = concentration
 
+    def __repr__(self):
+        representation = []
+        for component, concentration in self.concentrations.items():
+            representation.append(str(component) + ': ' + str(concentration))
+        return "{%s}" % '; '.join(representation)
+
 
 class Component(object):
     def __init__(self, name, rank, stock):
@@ -123,7 +139,13 @@ class Component(object):
     def __repr__(self):
         return "%s" % self.name
 
-if __name__ == '__main__':
+
+def test():
     form = pd.read_table(test_form, sep=',')
     exp = Experiment(form)
-    print exp
+    csv.writer(open(output_csv, 'wb')).writerows(exp.layout())
+    return exp
+
+
+if __name__ == '__main__':
+    test()
