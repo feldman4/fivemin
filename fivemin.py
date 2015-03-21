@@ -6,13 +6,12 @@ import numpy as np
 import sympy as sp
 from numpy.linalg import lstsq
 
-test_form = 'reaction_setup2.csv'
+test_form = 'reaction_tests.csv'
 output_csv = 'output2.csv'
 concentration_pattern = '([0-9]*\.*[0-9]*)(.*)'
 named_series_pattern = '((.*):)*(.*)'
 test_reaction_volume = 10
 test_pipette_loss = 1.1
-
 
 
 def symbol_array(sym, size, assumptions=None):
@@ -72,20 +71,22 @@ class Experiment(object):
 
     def layout(self, plate_size=(8, 12)):
         exp = self.expressions['experiment 2']
-        block_corners = []
-        # prefer spacing of 1 unless 0 saves plates
-        for spacing in range(2):
-            block_size = np.array(exp.split_size[-2:]) + spacing
-            num_blocks = np.prod(exp.split_size[:-2])
-            plate_tiling = np.floor(np.array(plate_size) / block_size)
-            corners = [(np.floor(i / plate_tiling[1]),
-                        i % plate_tiling[1],
-                        np.floor(i / np.prod(plate_tiling))) for i in range(num_blocks)]
-            block_corners.append(np.array(corners) * np.array(list(block_size) + [1]))
+        layout = {}
+        for experiment, exp in self.expressions.items():
+            block_corners = []
+            # prefer spacing of 1 unless 0 saves plates
+            for spacing in range(2):
+                block_size = np.array(exp.split_size[-2:]) + spacing
+                num_blocks = int(np.prod(exp.split_size[:-2]))
+                plate_tiling = np.floor(np.array(plate_size) / block_size)
+                corners = [(np.floor(float(i) / plate_tiling[1]),
+                            i % plate_tiling[1],
+                            np.floor(float(i) / np.prod(plate_tiling))) for i in range(num_blocks)]
+                block_corners.append(np.array(corners) * np.array(list(block_size) + [1]))
 
-        return block_corners[0] if block_corners[0][-1][2] < block_corners[1][-1][2] \
-            else block_corners[1]
-
+            layout[experiment] = block_corners[0] if block_corners[0][-1][2] < block_corners[1][-1][2] \
+                else block_corners[1]
+        return layout
 
 
 class Expression(object):
@@ -153,12 +154,12 @@ class Expression(object):
         self.h_values = {}
         # form system of linear equations
         h_syms = sp.Matrix(list(master_equation.free_symbols))
-        M = sp.Matrix([h.args[0].coeff(1)for h in h_constraints]).jacobian(h_syms)
+        M = sp.Matrix([h.args[0].coeff(1) for h in h_constraints]).jacobian(h_syms)
         x = [float(1 - (h.args[0] - h.args[0].coeff(1))) for h in h_constraints]
         self.h_values = {h: value for h, value in zip(h_syms, lstsq(M, x)[0])}
         # solved_constraints = sp.solve(h_constraints)
         # if type(solved_constraints) is list:
-        #     solved_constraints = solved_constraints[0]
+        # solved_constraints = solved_constraints[0]
         # for lhs, expr in solved_constraints.items():
         #     self.h_values.update({h: 0 for h in expr.free_symbols})
         #     self.h_values[lhs] = float(expr.subs(self.h_values))
@@ -177,8 +178,8 @@ class Expression(object):
         """
         # permute, sorting by lowest rank of split then size
         rank = [len(lc) if r == 0 else 1000 + r for r, lc in zip(self.rank, self.lc_syms)]
-        self.lc_syms = [s for r, s in sorted(zip(rank, self.lc_syms))]
-        self.uc_syms = [s for r, s in sorted(zip(rank, self.uc_syms))]
+        self.lc_syms = [s for r, s in sorted(zip(rank, self.lc_syms), key=lambda x: x[0])]
+        self.uc_syms = [s for r, s in sorted(zip(rank, self.uc_syms), key=lambda x: x[0])]
         self.split_size = tuple([len(l) for l in self.lc_syms])
 
 
