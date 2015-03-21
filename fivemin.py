@@ -58,7 +58,7 @@ class Experiment(object):
                 # generic format A: 1, 2, 3
                 name, series = re.match(named_series_pattern, entry).groups()[1:3]
                 series = [Concentration(c.strip(), stock=component) for c in series.split(',')]
-
+                series = sorted(series, key=lambda s: s.fraction())
                 if name is None:
                     name = 0 if len(series) == 1 else hash(component)
 
@@ -69,7 +69,6 @@ class Experiment(object):
             submixes = self.experiments[experiment].values()
             self.expressions[experiment] = Expression(submixes)
             self.expressions[experiment].sort()
-
 
     def layout(self):
         exp = self.expressions['experiment 2']
@@ -133,7 +132,7 @@ class Expression(object):
         """
         h_constraints = []
         for term in self.expression_eval.subs(self.uc_fractions).args:
-            h_constraints.append(sp.Eq(sp.log(term).expand(), 1))
+            h_constraints.append(sp.Eq(sp.log(term).expand().nsimplify(), 1))
 
         # set free water values to zero
         self.h_values = {}
@@ -143,7 +142,6 @@ class Expression(object):
         for lhs, expr in solved_constraints.items():
             self.h_values.update({h: 0 for h in expr.free_symbols})
             self.h_values[lhs] = expr.subs(self.h_values)
-        1
 
     def get_submix(self, submix):
         """Retrieve submix corresponding to tuple. Depends on ordering of lc_syms.
