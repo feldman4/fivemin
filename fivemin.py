@@ -68,8 +68,8 @@ class Experiment(object):
             # drop names, no longer important
             submixes = self.experiments[experiment].values()
             self.expressions[experiment] = Expression(submixes)
+            self.expressions[experiment].sort()
 
-            # split = self.sort_splits([split[i] for i in range(index + 1)])
 
     def layout(self):
         exp = self.expressions['experiment 2']
@@ -101,7 +101,7 @@ class Expression(object):
     def define_symbols(self, submixes):
         for submix in submixes:
             # lowercase symbols indicate sub-mix in particular experiment
-            self.lc_syms.append(sp.symarray(lc_alphabet.next(), len(submix)))
+            self.lc_syms.append(sp.symarray(lc_alphabet.next(), len(submix[0]['concentration'])))
             # uppercase symbols indicate components, subscripts
             self.uc_syms.append([symbol_array(s['symbol'], len(s['concentration']), {'positive': True})
                                  for s in submix])
@@ -114,10 +114,15 @@ class Expression(object):
 
     def form_expression(self):
         # form the dictionary relating lowercase symbols to uppercase and water
+        skip_h = False
         for l_terms, U_terms in zip(self.lc_syms, self.uc_syms):
             for i, (l, U) in enumerate(reversed(zip(l_terms, zip(*U_terms)))):
-                self.components[l] = sp.exp(sum([V for V in U] +
-                                                [sp.symbols('h_' + str(l), positive=True)]))
+                if i is 0 and skip_h:
+                    self.components[l] = sp.exp(sum([V for V in U]))
+                else:
+                    self.components[l] = sp.exp(sum([V for V in U] +
+                                                    [sp.symbols('h_' + str(l), positive=True)]))
+            skip_h = True
 
         self.expression = sp.prod([sum(s) for s in self.lc_syms])
         self.expression_eval = sp.expand(self.expression).subs(self.components)
@@ -128,7 +133,7 @@ class Expression(object):
         """
         h_constraints = []
         for term in self.expression_eval.subs(self.uc_fractions).args:
-            h_constraints.append(sp.Eq(sp.log(term).simplify(), 1))
+            h_constraints.append(sp.Eq(sp.log(term).expand(), 1))
 
         # set free water values to zero
         self.h_values = {}
@@ -138,6 +143,7 @@ class Expression(object):
         for lhs, expr in solved_constraints.items():
             self.h_values.update({h: 0 for h in expr.free_symbols})
             self.h_values[lhs] = expr.subs(self.h_values)
+        1
 
     def get_submix(self, submix):
         """Retrieve submix corresponding to tuple. Depends on ordering of lc_syms.
