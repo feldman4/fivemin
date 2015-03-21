@@ -30,7 +30,7 @@ class Experiment(object):
         self.reactions = {}
         self.reaction_volume = reaction_volume
         self.pipette_loss = pipette_loss
-        self.syms = {}
+        self.syms = {Component('water', 0): 'h'}
         self.syms_to_components = {}
         self.experiments = {}
         self.expressions = {}
@@ -72,12 +72,12 @@ class Experiment(object):
     def layout(self, plate_size=(8, 12)):
         exp = self.expressions['experiment 2']
         layout = {}
-        for experiment, exp in self.expressions.items():
+        for experiment, expression in self.expressions.items():
             block_corners = []
             # prefer spacing of 1 unless 0 saves plates
             for spacing in range(2):
-                block_size = np.array(exp.split_size[-2:]) + spacing
-                num_blocks = int(np.prod(exp.split_size[:-2]))
+                block_size = np.array(expression.split_size[-2:]) + spacing
+                num_blocks = int(np.prod(expression.split_size[:-2]))
                 plate_tiling = np.floor(np.array(plate_size) / block_size)
                 corners = [(np.floor(float(i) / plate_tiling[1]),
                             i % plate_tiling[1],
@@ -87,6 +87,11 @@ class Experiment(object):
             layout[experiment] = block_corners[0] if block_corners[0][-1][2] < block_corners[1][-1][2] \
                 else block_corners[1]
         return layout
+
+    def write_instructions(self):
+        for experiment, expression in self.expression.items():
+            for index, size in enumerate(expression.split_size):
+                Instruction
 
 
 class Expression(object):
@@ -157,12 +162,6 @@ class Expression(object):
         M = sp.Matrix([h.args[0].coeff(1) for h in h_constraints]).jacobian(h_syms)
         x = [float(1 - (h.args[0] - h.args[0].coeff(1))) for h in h_constraints]
         self.h_values = {h: value for h, value in zip(h_syms, lstsq(M, x)[0])}
-        # solved_constraints = sp.solve(h_constraints)
-        # if type(solved_constraints) is list:
-        # solved_constraints = solved_constraints[0]
-        # for lhs, expr in solved_constraints.items():
-        #     self.h_values.update({h: 0 for h in expr.free_symbols})
-        #     self.h_values[lhs] = float(expr.subs(self.h_values))
 
     def get_submix(self, submix):
         """Retrieve submix corresponding to tuple. Depends on ordering of lc_syms.
@@ -171,6 +170,19 @@ class Expression(object):
         """
         split = sp.prod(self.lc_syms[i][j] for i, j in enumerate(submix))
         return sp.log(split.subs(self.components)).expand()
+
+    def expression_to_dict(self, expression):
+        result = {}
+        complete_dict = self.uc_fractions.copy()
+        complete_dict.update(self.h_values)
+        it = expression.args
+        # take care of expression with only one variable
+        if len(it) == 0:
+            it = [expression]
+        for arg in it:
+            letter = str(arg)[0]
+            result.update({letter: complete_dict[arg]})
+        return result
 
     def sort(self):
         """Reorder lc_syms based on highest rank of components and sub-mix size.
@@ -184,7 +196,7 @@ class Expression(object):
 
 
 class Instruction(object):
-    def __init__(self):
+    def __init__(self, split_info, volume):
         self.text = 'Add '
         self.split = (None, None)
         self.split_size = 0.
