@@ -9,8 +9,8 @@ test_form = 'reaction_setup2.csv'
 output_csv = 'output2.csv'
 concentration_pattern = '([0-9]*\.*[0-9]*)(.*)'
 named_series_pattern = '((.*):)*(.*)'
-reaction_volume = 10
-pipette_loss = 1.1
+test_reaction_volume = 10
+test_pipette_loss = 1.1
 lc_alphabet = (chr(i).lower() for i in range(65, 65 + 26))
 uc_alphabet = (chr(i) for i in range(65, 65 + 26))
 
@@ -32,7 +32,7 @@ class Experiment(object):
         self.reaction_volume = reaction_volume
         self.pipette_loss = pipette_loss
         self.syms = {}
-        self.layout = lambda: []
+        self.syms_to_components = {}
         self.experiments = {}
         self.expressions = {}
 
@@ -47,14 +47,13 @@ class Experiment(object):
         for rank, name, stock in zip(form.fillna(value=0)['rank'], form['reagent'], form['stock']):
             self.components.append(Component(name=name, rank=rank, concentration=Concentration(stock)))
             self.syms[self.components[-1]] = uc_alphabet.next()
+        self.syms_to_components = {val: key for key, val in self.syms.items()}
         # get experiment columns
         experiments = filter(lambda s: 'experiment' in s, form.columns)
         # determine sub-mixes and components
         self.experiments = {exp: defaultdict(list) for exp in experiments}
-        experiments = ['experiment 2']
         for experiment in experiments:
             # TODO convert concentrations to fold dilutions
-            lc_syms, uc_syms, uc_fractions = [], [], {}
             for entry, component in zip(form.fillna(value='1X')[experiment], self.components):
                 # generic format A: 1, 2, 3
                 name, series = re.match(named_series_pattern, entry).groups()[1:3]
@@ -64,53 +63,54 @@ class Experiment(object):
                     name = 0 if len(series) == 1 else hash(component)
 
                 self.experiments[experiment][name].append({'concentration': series,
-                                                           'component': component})
-            # names no longer important
-            it = self.experiments[experiment].values()
-
-            for submix in it:
-                # lowercase symbols indicate sub-mix in particular experiment
-                lc_syms.append(sp.symarray(lc_alphabet.next(), len(submix)))
-                # uppercase symbols indicate components, subscripts
-                uc_syms.append([symbol_array(self.syms[s['component']], len(s['concentration']), {'positive': True})
-                                for s in submix])
-                # fraction of the final reaction associated with each sub-mix component
-                uc_fractions.update({
-                    n[i]: c.fraction()
-                    for s, n in zip(submix, uc_syms[-1]) for i, c in enumerate(s['concentration'])
-                })
-            self.expressions[experiment] = Expression(lc_syms, uc_syms, uc_fractions)
-
+                                                           'component': component,
+                                                           'symbol': self.syms[component]})
+            # drop names, no longer important
+            submixes = self.experiments[experiment].values()
+            self.expressions[experiment] = Expression(submixes)
 
             # split = self.sort_splits([split[i] for i in range(index + 1)])
 
-    def sort_splits(self, split):
-        # permute, sorting by lowest rank of split then size
+    def layout(self):
+        exp = self.expressions['experiment 2']
+        exp.lc_syms[-1]
 
-        rank = [max([i[0].rank for i in ingredients]) for ingredients in split]
-        rank = [len(ingredients[0][1]) if r == 0 else 1000 + r for r, ingredients in zip(rank, split)]
-        sorted_split = [s for (r, s) in sorted(zip(rank, split))]
-        return sorted_split
+        return []
 
-    def expand(self, split):
+
+class Expression(object):
+    def __init__(self, submixes):
         """Represent experiment as symbolic expression. When fully expanded, each term represents a final reaction.
         Intermediate factorizations represent sub-mixes.
         :return:
         """
+        self.lc_syms = []
+        self.uc_syms = []
+        self.rank = []
+        self.uc_fractions = {}
 
-
-class Expression(object):
-    def __init__(self, lc_syms, uc_syms, uc_fractions):
-        self.lc_syms = lc_syms
-        self.uc_syms = uc_syms
-        self.uc_fractions = uc_fractions
         self.expression = None
         self.expression_eval = None
         self.components = {}
         self.h_values = {}
 
+        self.define_symbols(submixes)
         self.form_expression()
         self.pick_h2o()
+
+    def define_symbols(self, submixes):
+        for submix in submixes:
+            # lowercase symbols indicate sub-mix in particular experiment
+            self.lc_syms.append(sp.symarray(lc_alphabet.next(), len(submix)))
+            # uppercase symbols indicate components, subscripts
+            self.uc_syms.append([symbol_array(s['symbol'], len(s['concentration']), {'positive': True})
+                                 for s in submix])
+            # fraction of the final reaction associated with each sub-mix component
+            fractions = {n[i]: c.fraction()
+                         for s, n in zip(submix, self.uc_syms[-1])
+                         for i, c in enumerate(s['concentration'])}
+            self.uc_fractions.update(fractions)
+            self.rank.append(max([s['component'].rank for s in submix]))
 
     def form_expression(self):
         # form the dictionary relating lowercase symbols to uppercase and water
@@ -120,9 +120,7 @@ class Expression(object):
                                                 [sp.symbols('h_' + str(l), positive=True)]))
 
         self.expression = sp.prod([sum(s) for s in self.lc_syms])
-        self.expression_eval = sp.expand(self.expression)
-        for var, value in self.components.items():
-            self.expression_eval = self.expression_eval.subs(var, value)
+        self.expression_eval = sp.expand(self.expression).subs(self.components)
 
     def pick_h2o(self):
         """Determine water added in each submix by solving constraints on added water.
@@ -148,6 +146,14 @@ class Expression(object):
         """
         split = sp.prod(self.lc_syms[i][j] for i, j in enumerate(submix))
         return sp.log(split.subs(self.components)).expand()
+
+    def sort(self):
+        """Reorder lc_syms based on highest rank of components and sub-mix size.
+        :return:
+        """
+        # permute, sorting by lowest rank of split then size
+        rank = [len(lc) if r == 0 else 1000 + r for r, lc in zip(self.rank, self.lc_syms)]
+        self.lc_syms = [s for r, s in sorted(zip(rank, self.lc_syms))]
 
 
 class Instruction(object):
@@ -224,7 +230,8 @@ class Component(object):
 
 def test():
     form = pd.read_table(test_form, sep=',')
-    exp = Experiment(form, reaction_volume=reaction_volume, pipette_loss=1.1)
+    exp = Experiment(form, reaction_volume=test_reaction_volume,
+                     pipette_loss=test_pipette_loss)
     csv.writer(open(output_csv, 'wb')).writerows(exp.layout())
     return exp
 
