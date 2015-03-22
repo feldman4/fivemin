@@ -6,7 +6,7 @@ import numpy as np
 import sympy as sp
 from numpy.linalg import lstsq
 
-test_form = 'reaction_tests.csv'
+test_form = 'reaction_setup2.csv'
 output_csv = 'output2.csv'
 concentration_pattern = '([0-9]*\.*[0-9]*)(.*)'
 named_series_pattern = '((.*):)*(.*)'
@@ -60,7 +60,7 @@ class Experiment(object):
                 series = [Concentration(c.strip(), stock=component) for c in series.split(',')]
                 series = sorted(series, key=lambda s: s.fraction())
                 if name is None:
-                    name = 0 if len(series) == 1 else hash(component)
+                    name = 0 if len(series) == 1 and component.rank == 0 else hash(component)
 
                 self.experiments[experiment][name].append({'concentration': series,
                                                            'component': component,
@@ -105,7 +105,8 @@ class Expression(object):
         self.split_size = []
         self.rank = []
         self.uc_fractions = {}
-        self.lc_alphabet = (chr(i).lower() for i in range(65, 65 + 26))
+        self.lc_alphabet = (chr(i).lower() for i in range(65, 65 + 25))
+        self.loss =sp.symbols('z')
 
         self.expression = None
         self.expression_eval = None
@@ -171,6 +172,16 @@ class Expression(object):
         split = sp.prod(self.lc_syms[i][j] for i, j in enumerate(submix))
         return sp.log(split.subs(self.components)).expand()
 
+    def get_split(self, split):
+        """Return expression for material in split from step i to step i+1.
+        :param split:
+        :return:
+        """
+        term = sp.prod(s[0] for s in self.lc_syms[:split+1]).subs(self.components).subs(self.h_values)
+        term = sp.log(term).expand().subs(self.uc_fractions)
+        return self.loss**(len(self.split_size) - split - 1) * \
+            np.prod(self.split_size[split + 1:]) * term
+
     def expression_to_dict(self, expression):
         result = {}
         complete_dict = self.uc_fractions.copy()
@@ -185,7 +196,7 @@ class Expression(object):
         return result
 
     def sort(self):
-        """Reorder lc_syms based on highest rank of components and sub-mix size.
+        """Reorder lc_syms based on highest rank of components and submix size.
         :return:
         """
         # permute, sorting by lowest rank of split then size
@@ -204,12 +215,12 @@ class Instruction(object):
         self.split_label = 'M1'
 
     def get_text(self):
-        text1 = 'Split each mix into %d sub-mixes with %.2g uL each.' % \
+        text1 = 'Split each mix into %d submixes with %.2g uL each.' % \
                 (self.split_size, self.split_volume)
 
         mix_labels = ['%s-%d' % (self.split_size, i) for i in range(self.split_size)]
-        text2 = 'Label the new sub-mixes %s.' % ', '.join(mix_labels)
-        text3 = 'Add the following to each sub-mix:\n'
+        text2 = 'Label the new submixes %s.' % ', '.join(mix_labels)
+        text3 = 'Add the following to each submix:\n'
         pd.DataFrame()
 
     def get_html(self):
