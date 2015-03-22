@@ -1,4 +1,4 @@
-import csv, string
+import csv
 import re
 import pandas as pd
 from collections import defaultdict
@@ -6,7 +6,7 @@ import numpy as np
 import sympy as sp
 from numpy.linalg import lstsq
 
-test_form = 'reaction_setup2.csv'
+test_form = 'reaction_tests.csv'
 output_csv = 'output2.csv'
 concentration_pattern = '([0-9]*\.*[0-9]*)(.*)'
 named_series_pattern = '((.*):)*(.*)'
@@ -19,18 +19,20 @@ def symbol_array(sym, size, assumptions=None):
             for i in range(size)]
 
 
+# noinspection PyTypeChecker
 class Experiment(object):
     def __init__(self, form, reaction_volume=10, pipette_loss=1.):
         """Container for experiment, including all parameters and generated information.
         :param form:
         :return:
         """
-        self.info = {}
+        self.instructions = {}
         self.components = []
         self.reactions = {}
         self.reaction_volume = reaction_volume
         self.pipette_loss = pipette_loss
-        self.syms = {Component('water', 0): 'h'}
+        self.water = Component('water', 0)
+        self.syms = {self.water: 'h'}
         self.syms_to_components = {}
         self.experiments = {}
         self.expressions = {}
@@ -89,9 +91,48 @@ class Experiment(object):
         return layout
 
     def write_instructions(self):
-        for experiment, expression in self.expression.items():
-            for index, size in enumerate(expression.split_size):
-                Instruction
+        """Find volumes of each component in each submix, as well as volume of split between submixes. Use to create
+        Instructions.
+        :return:
+        """
+        self.instructions = {}
+        for expt, expr in self.expressions.items():
+            self.instructions[expt] = []
+            pd.set_option('precision', 3)
+            for i, count in enumerate(expr.split_size):
+                this, vol = [], []
+                for submix in [[0 for j in range(i)] + [k] for k in range(count)]:
+                    vol = np.prod(expr.split_size[i + 1:]) * self.reaction_volume * \
+                          self.pipette_loss ** (len(expr.split_size) - (i + 1))
+                    if i == 0:
+                        tmp = expr.expression_to_dict(expr.get_submix(submix))
+                    else:
+                        tmp = expr.expression_to_dict(expr.get_submix(submix) -
+                                                      expr.get_submix(submix[:-1]))
+                    # swap in component names
+                    this.append({self.syms_to_components[key]: val
+                                 for key, val in tmp.items()})
+                # format into table, make water last if present
+                tbl = pd.DataFrame(this) * vol
+                reindex = list(tbl.columns)
+                if self.water in reindex:
+                    reindex.append(reindex.pop(reindex.index(self.water)))
+                tbl = tbl[reindex].transpose()
+                tbl.columns = ['%d-%d' % (i+1, j+1) for j in tbl.columns]
+                tbl[tbl == 0] = float('nan')
+                split_vol = expr.get_split(i).subs(expr.loss, self.pipette_loss) * \
+                            self.reaction_volume
+                self.instructions[expt].append(Instruction(tbl, split_vol))
+
+    def print_instructions(self):
+        result = {}
+        for experiment, instructions in self.instructions.items():
+            lines = []
+            for step, instr in enumerate(instructions):
+                text = instr.get_first_text() if step == 0 else instr.get_text()
+                lines.append('%d. ' % (step + 1) + text + '\n')
+            result[experiment] = lines
+        return result
 
 
 class Expression(object):
@@ -104,9 +145,10 @@ class Expression(object):
         self.uc_syms = []
         self.split_size = []
         self.rank = []
+        self.volumes = []
         self.uc_fractions = {}
         self.lc_alphabet = (chr(i).lower() for i in range(65, 65 + 25))
-        self.loss =sp.symbols('z')
+        self.loss = sp.symbols('z')
 
         self.expression = None
         self.expression_eval = None
@@ -164,12 +206,20 @@ class Expression(object):
         x = [float(1 - (h.args[0] - h.args[0].coeff(1))) for h in h_constraints]
         self.h_values = {h: value for h, value in zip(h_syms, lstsq(M, x)[0])}
 
+        # determine final volume for each split
+        self.volumes = []
+        for i in range(len(self.lc_syms)):
+            term = sp.prod(s[0] for s in self.lc_syms[:i + 1]).subs(self.components)
+            term = sp.log(term).expand()
+            self.volumes.append(term.subs(self.uc_fractions).subs(self.h_values))
+
     def get_submix(self, submix):
         """Retrieve submix corresponding to tuple. Depends on ordering of lc_syms.
         :param submix:
         :return:
         """
         split = sp.prod(self.lc_syms[i][j] for i, j in enumerate(submix))
+        # TODO collect from main expression and count terms to get volume
         return sp.log(split.subs(self.components)).expand()
 
     def get_split(self, split):
@@ -177,10 +227,10 @@ class Expression(object):
         :param split:
         :return:
         """
-        term = sp.prod(s[0] for s in self.lc_syms[:split+1]).subs(self.components).subs(self.h_values)
+        term = sp.prod(s[0] for s in self.lc_syms[:split + 1]).subs(self.components).subs(self.h_values)
         term = sp.log(term).expand().subs(self.uc_fractions)
-        return self.loss**(len(self.split_size) - split - 1) * \
-            np.prod(self.split_size[split + 1:]) * term
+        return self.loss ** (len(self.split_size) - split - 1) * \
+               np.prod(self.split_size[split + 1:]) * term
 
     def expression_to_dict(self, expression):
         result = {}
@@ -207,21 +257,27 @@ class Expression(object):
 
 
 class Instruction(object):
-    def __init__(self, split_info, volume):
+    def __init__(self, table, split_volume):
+        self.table = table
+        self.split_volume = split_volume
+        self.split_size = table.shape[1]
         self.text = 'Add '
         self.split = (None, None)
         self.split_size = 0.
-        self.split_volume = 0.
         self.split_label = 'M1'
+        self.plural = lambda i: '' if i == 1 else 'es'
 
     def get_text(self):
-        text1 = 'Split each mix into %d submixes with %.2g uL each.' % \
-                (self.split_size, self.split_volume)
+        count = self.table.shape[1]
+        text1 = 'Transfer %.3g uL into each of %d submix%s.\n' % \
+                        (self.split_volume, count, self.plural(count))
+        text2 = 'Add the following to each submix:\n'
+        return text1 + text2 + '\n' + str(self.table.fillna('-'))
 
-        mix_labels = ['%s-%d' % (self.split_size, i) for i in range(self.split_size)]
-        text2 = 'Label the new submixes %s.' % ', '.join(mix_labels)
-        text3 = 'Add the following to each submix:\n'
-        pd.DataFrame()
+    def get_first_text(self):
+        count = self.table.shape[1]
+        text1 = 'Make %d mastermix%s with the following:\n' % (count, self.plural(count))
+        return text1 + '\n' + str(self.table.fillna('-'))
 
     def get_html(self):
         pass
