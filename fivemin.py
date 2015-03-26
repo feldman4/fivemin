@@ -5,6 +5,7 @@ from collections import defaultdict
 import numpy as np
 import sympy as sp
 from numpy.linalg import lstsq
+import sys
 
 test_form = 'reaction_tests.csv'
 output_csv = 'output2.csv'
@@ -227,7 +228,10 @@ class Expression(object):
         :param split:
         :return:
         """
-        term = sp.prod(s[0] for s in self.lc_syms[:split + 1]).subs(self.components).subs(self.h_values)
+        if split == 0:
+            return self.loss ** (len(self.split_size) - 1) * np.prod(self.split_size)
+
+        term = sp.prod(s[0] for s in self.lc_syms[:split]).subs(self.components).subs(self.h_values)
         term = sp.log(term).expand().subs(self.uc_fractions)
         return self.loss ** (len(self.split_size) - split - 1) * \
                np.prod(self.split_size[split + 1:]) * term
@@ -258,7 +262,7 @@ class Expression(object):
 
 class Instruction(object):
     def __init__(self, table, split_volume):
-        self.table = table
+        self.table = np.round(table, 2).replace(to_replace=0, value=float('nan'))
         self.split_volume = split_volume
         self.split_size = table.shape[1]
         self.text = 'Add '
@@ -269,7 +273,7 @@ class Instruction(object):
 
     def get_text(self):
         count = self.table.shape[1]
-        text1 = 'Transfer %.3g uL into each of %d submix%s.\n' % \
+        text1 = 'Transfer %.3g uL to each of %d submix%s.\n' % \
                         (self.split_volume, count, self.plural(count))
         text2 = 'Add the following to each submix:\n'
         return text1 + text2 + '\n' + str(self.table.fillna('-'))
@@ -334,13 +338,16 @@ class Component(object):
         return "%s" % self.name
 
 
-def test():
-    form = pd.read_table(test_form, sep=',')
+def test(filename=test_form):
+    form = pd.read_table(filename, sep=',')
     exp = Experiment(form, reaction_volume=test_reaction_volume,
                      pipette_loss=test_pipette_loss)
-    csv.writer(open(output_csv, 'wb')).writerows(exp.layout())
+
+    exp.write_instructions()
+    with open(filename[:-4] + '_output.txt', 'w') as fh:
+        fh.writelines([a + '\n' for a in exp.print_instructions().values()[0]])
     return exp
 
 
 if __name__ == '__main__':
-    test()
+    test(filename=sys.argv[1])
