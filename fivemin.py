@@ -1,4 +1,3 @@
-import csv
 import re
 import pandas as pd
 from collections import defaultdict
@@ -27,16 +26,16 @@ class Experiment(object):
         :param form:
         :return:
         """
-        self.instructions = {}
+        self.instructions = []
         self.components = []
+        self.series = {}
         self.reactions = {}
         self.reaction_volume = reaction_volume
         self.pipette_loss = pipette_loss
         self.water = Component('water', 0)
         self.syms = {self.water: 'h'}
         self.syms_to_components = {}
-        self.experiments = {}
-        self.expressions = {}
+        self.expression = None
         self.uc_alphabet = (chr(i) for i in range(65, 65 + 26))
 
         self.setup(form)
@@ -51,44 +50,42 @@ class Experiment(object):
             self.components.append(Component(name=name, rank=rank, concentration=Concentration(stock)))
             self.syms[self.components[-1]] = self.uc_alphabet.next()
         self.syms_to_components = {val: key for key, val in self.syms.items()}
-        # get experiment columns
-        experiments = filter(lambda s: 'experiment' in s, form.columns)
+        self.series = defaultdict(list)
         # determine sub-mixes and components
-        self.experiments = {exp: defaultdict(list) for exp in experiments}
-        for experiment in experiments:
-            # TODO convert concentrations to fold dilutions
-            for entry, component in zip(form.fillna(value='1X')[experiment], self.components):
-                # generic format A: 1, 2, 3
-                name, series = re.match(named_series_pattern, entry).groups()[1:3]
-                series = [Concentration(c.strip(), stock=component) for c in series.split(',')]
-                series = sorted(series, key=lambda s: s.fraction())
-                if name is None:
-                    name = 0 if len(series) == 1 and component.rank == 0 else hash(component)
+        # TODO convert concentrations to fold dilutions
+        for entry, component in zip(form.fillna(value='1X')['experiment'], self.components):
+            # generic format A: 1, 2, 3
+            name, series = re.match(named_series_pattern, entry).groups()[1:3]
+            series = [Concentration(c.strip(), stock=component) for c in series.split(',')]
+            series = sorted(series, key=lambda s: s.fraction())
+            if name is None:
+                name = 0 if len(series) == 1 and component.rank == 0 else hash(component)
 
-                self.experiments[experiment][name].append({'concentration': series,
-                                                           'component': component,
-                                                           'symbol': self.syms[component]})
-            # drop names, no longer important
-            submixes = self.experiments[experiment].values()
-            self.expressions[experiment] = Expression(submixes)
+            self.series[name].append({'concentration': series,
+                                      'component': component,
+                                      'symbol': self.syms[component]})
+        self.series = self.series.values()
+        self.expression = Expression(self.series)
 
     def layout(self, plate_size=(8, 12)):
-        exp = self.expressions['experiment 2']
-        layout = {}
-        for experiment, expression in self.expressions.items():
-            block_corners = []
-            # prefer spacing of 1 unless 0 saves plates
-            for spacing in range(2):
-                block_size = np.array(expression.split_size[-2:]) + spacing
-                num_blocks = int(np.prod(expression.split_size[:-2]))
-                plate_tiling = np.floor(np.array(plate_size) / block_size)
-                corners = [(np.floor(float(i) / plate_tiling[1]),
-                            i % plate_tiling[1],
-                            np.floor(float(i) / np.prod(plate_tiling))) for i in range(num_blocks)]
-                block_corners.append(np.array(corners) * np.array(list(block_size) + [1]))
 
-            layout[experiment] = block_corners[0] if block_corners[0][-1][2] < block_corners[1][-1][2] \
-                else block_corners[1]
+        # find corners
+
+        block_corners = []
+        # prefer spacing of 1 unless 0 saves plates
+        for spacing in range(2):
+            block_size = np.array(self.expression.split_size[-2:]) + spacing
+            num_blocks = int(np.prod(self.expression.split_size[:-2]))
+            plate_tiling = np.floor(np.array(plate_size) / block_size)
+            corners = [(np.floor(float(i) / plate_tiling[1]),
+                        i % plate_tiling[1],
+                        np.floor(float(i) / np.prod(plate_tiling))) for i in range(num_blocks)]
+            block_corners.append(np.array(corners) * np.array(list(block_size) + [1]))
+
+        layout = block_corners[0] if block_corners[0][-1][2] < block_corners[1][-1][2] \
+            else block_corners[1]
+
+        # generate compact, detailed DataFrames
         return layout
 
     def write_instructions(self):
@@ -96,44 +93,39 @@ class Experiment(object):
         Instructions.
         :return:
         """
-        self.instructions = {}
-        for expt, expr in self.expressions.items():
-            self.instructions[expt] = []
-            pd.set_option('precision', 3)
-            for i, count in enumerate(expr.split_size):
-                this, vol = [], []
-                for submix in [[0 for j in range(i)] + [k] for k in range(count)]:
-                    vol = np.prod(expr.split_size[i + 1:]) * self.reaction_volume * \
-                          self.pipette_loss ** (len(expr.split_size) - (i + 1))
-                    if i == 0:
-                        tmp = expr.expression_to_dict(expr.get_submix(submix))
-                    else:
-                        tmp = expr.expression_to_dict(expr.get_submix(submix) -
-                                                      expr.get_submix(submix[:-1]))
-                    # swap in component names
-                    this.append({self.syms_to_components[key]: val
-                                 for key, val in tmp.items()})
-                # format into table, make water last if present
-                tbl = pd.DataFrame(this) * vol
-                reindex = list(tbl.columns)
-                if self.water in reindex:
-                    reindex.append(reindex.pop(reindex.index(self.water)))
-                tbl = tbl[reindex].transpose()
-                tbl.columns = ['%d-%d' % (i+1, j+1) for j in tbl.columns]
-                tbl[tbl == 0] = float('nan')
-                split_vol = expr.get_split(i).subs(expr.loss, self.pipette_loss) * \
-                            self.reaction_volume
-                self.instructions[expt].append(Instruction(tbl, split_vol))
+
+        pd.set_option('precision', 3)
+        for i, count in enumerate(self.expression.split_size):
+            this, vol = [], []
+            for submix in [[0 for j in range(i)] + [k] for k in range(count)]:
+                vol = np.prod(self.expression.split_size[i + 1:]) * self.reaction_volume * \
+                      self.pipette_loss ** (len(self.expression.split_size) - (i + 1))
+                if i == 0:
+                    tmp = self.expression.expression_to_dict(self.expression.get_submix(submix))
+                else:
+                    tmp = self.expression.expression_to_dict(self.expression.get_submix(submix) -
+                                                  self.expression.get_submix(submix[:-1]))
+                # swap in component names
+                this.append({self.syms_to_components[key]: val
+                             for key, val in tmp.items()})
+            # format into table, make water last if present
+            tbl = pd.DataFrame(this) * vol
+            reindex = list(tbl.columns)
+            if self.water in reindex:
+                reindex.append(reindex.pop(reindex.index(self.water)))
+            tbl = tbl[reindex].transpose()
+            tbl.columns = ['%d-%d' % (i + 1, j + 1) for j in tbl.columns]
+            tbl[tbl == 0] = float('nan')
+            split_vol = self.expression.get_split(i).subs(self.expression.loss, self.pipette_loss) * \
+                        self.reaction_volume
+            self.instructions.append(Instruction(tbl, split_vol))
 
     def print_instructions(self):
-        result = {}
-        for experiment, instructions in self.instructions.items():
-            lines = []
-            for step, instr in enumerate(instructions):
-                text = instr.get_first_text() if step == 0 else instr.get_text()
-                lines.append('%d. ' % (step + 1) + text + '\n')
-            result[experiment] = lines
-        return result
+        lines = []
+        for step, instr in enumerate(self.instructions):
+            text = instr.get_first_text() if step == 0 else instr.get_text()
+            lines.append('%d. ' % (step + 1) + text + '\n')
+        return lines
 
 
 class Expression(object):
@@ -274,7 +266,7 @@ class Instruction(object):
     def get_text(self):
         count = self.table.shape[1]
         text1 = 'Transfer %.3g uL to each of %d submix%s.\n' % \
-                        (self.split_volume, count, self.plural(count))
+                (self.split_volume, count, self.plural(count))
         text2 = 'Add the following to each submix:\n'
         return text1 + text2 + '\n' + str(self.table.fillna('-'))
 
@@ -345,7 +337,7 @@ def test(filename=test_form):
 
     exp.write_instructions()
     with open(filename[:-4] + '_output.txt', 'w') as fh:
-        fh.writelines([a + '\n' for a in exp.print_instructions().values()[0]])
+        fh.writelines([a + '\n' for a in exp.print_instructions()])
     return exp
 
 

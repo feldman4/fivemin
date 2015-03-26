@@ -1,3 +1,3 @@
 import fivemin
 
-fivemin.test(filename="kapa fast.csv")
+fivemin.test(filename="kfn.csv")
