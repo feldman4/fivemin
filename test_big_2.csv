@@ -1,0 +1,7 @@
+rank,reagent,stock,experiment
+,jumpstart,2X,"0.94X, 0.95X, 0.96X"
+1,EVA,50X,"A: 1X, 2X, 3X"
+2,ROX,100X,"B: 1X,  2X, 4X, 6X"
+,primers,100 uM,"0.5 uM, 1 uM, 10 uM"
+3,template,10X,1 uL
+,DMSO,100 mM,"0 mM, 4 mM"

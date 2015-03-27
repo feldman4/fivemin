@@ -1,0 +1,9 @@
+rank,reagent,stock,experiment
+,KAPA Fast,50X,"1X, 2X"
+,EVA,50X,"A: 1X, 2X"
+,ROX,100X,"1X, 3X, 6X"
+,FWD primer,10X,"A: 1X, 1X"
+,REV primer,10X,"1X, 1X, 1X, 1X"
+3,template,10X,
+,minimal buffer,5X,"0X, 1X"
+,nextera product,10X,"0X, 1X"
