@@ -1,5 +1,6 @@
 import fivemin
-import os, glob
+import os
+import glob
 
 path = os.path.dirname(__file__)
 
