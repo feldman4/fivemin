@@ -86,7 +86,15 @@ class Experiment(object):
             else block_corners[1]
 
         # generate compact, detailed DataFrames
-        return layout
+        iterables = [['/'.join([str(k['concentration'][i]) for k in s])
+                      for i in range(len(s[0]['concentration']))] for s in self.series]
+        names = ['/'.join([str(k['component']) for k in s])
+                 for s in self.series]
+        iterables = [it for s, it in zip(self.series, iterables) if len(s[0]['concentration']) > 1]
+        names = [n for s, n in zip(self.series, names) if len(s[0]['concentration']) > 1]
+        compact = pd.MultiIndex.from_product(iterables, names=names)
+        compact_df = pd.DataFrame(np.random.rand(np.prod(self.expression.split_size), 4), index=compact)
+        return layout, compact_df
 
     def write_instructions(self):
         """Find volumes of each component in each submix, as well as volume of split between submixes. Use to create
@@ -104,7 +112,7 @@ class Experiment(object):
                     tmp = self.expression.expression_to_dict(self.expression.get_submix(submix))
                 else:
                     tmp = self.expression.expression_to_dict(self.expression.get_submix(submix) -
-                                                  self.expression.get_submix(submix[:-1]))
+                                                             self.expression.get_submix(submix[:-1]))
                 # swap in component names
                 this.append({self.syms_to_components[key]: val
                              for key, val in tmp.items()})
@@ -338,6 +346,7 @@ def test(filename=test_form):
     exp.write_instructions()
     with open(filename[:-4] + '_output.txt', 'w') as fh:
         fh.writelines([a + '\n' for a in exp.print_instructions()])
+    exp.layout()
     return exp
 
 
