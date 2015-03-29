@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, render_template
 import fivemin
 
 app = Flask(__name__)
@@ -9,9 +9,17 @@ app.config['DEBUG'] = True
 
 
 @app.route('/')
-def hello():
+def hello2():
     """Return a friendly HTTP greeting."""
-    return 'Fuck World!'
+    return 'Fuck You Worlds!'
+
+@app.route('/<planet>')
+def eatshit(planet):
+    return 'Welcome to %s earthling' % planet
+
+@app.route('/hello/<name>')
+def hello(name=None):
+    return render_template('hello.html', name=name)
 
 
 @app.errorhandler(404)
