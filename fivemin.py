@@ -409,8 +409,8 @@ class Layout(object):
             plate_vals = [plate % np.prod(subsplit[:i+1]) for i in range(len(plate_splits))]
             this_conc = ['|'.join([str(z['concentration'][v]) for z in y])
                          for y, v in zip(plate_splits, plate_vals)]
-            this_col_index = pd.MultiIndex.from_product(this_conc + conc(col_it),
-                                                        names=plate_names + names(col_it))
+            this_col_index = pd.MultiIndex.from_product([this_conc] + conc(col_it),
+                                                        names=[plate_names] + names(col_it))
             plate_dfs.append(pd.DataFrame(0, index=row_index, columns=this_col_index))
 
         self.plate_dfs = plate_dfs
