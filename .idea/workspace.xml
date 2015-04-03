@@ -2,27 +2,17 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="95f9ecff-375d-482b-a3cd-4369467263d6" name="Default" comment="">
-      <change type="DELETED" beforePath="$PROJECT_DIR$/fivemin/fivemin.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/fivemin/main.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/fivemin/static/default_experiment.csv" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/fivemin/static/flat-table.css" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/fivemin/static/handsontable.full.css" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/fivemin/static/handsontable.full.js" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/fivemin/static/jquery-1.11.1.min.js" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/fivemin/static/jquery.csv-0.71.js" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/fivemin/static/mainpage.css" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/fivemin/templates/hello.html" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/fivemin/templates/index.html" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/fivemin/templates/input.html" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/fivemin/templates/layout.html" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/fivemin/test.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/fivemin/test_big_1.csv" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/fivemin/test_big_1_output.txt" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/fivemin/test_big_2.csv" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/fivemin/test_big_2_output.txt" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/fivemin/test_little_1.csv" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/fivemin/test_little_1_output.txt" afterPath="" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/Procfile" afterPath="$PROJECT_DIR$/Procfile" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/static/default_experiment.csv" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/static/flat-table.css" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/static/handsontable.full.css" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/static/handsontable.full.js" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/templates/hello.html" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/templates/index.html" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/templates/input.html" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/static/jquery-1.11.1.min.js" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/static/jquery.csv-0.71.js" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/templates/layout.html" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/static/mainpage.css" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
     </list>
     <ignored path="fivemin.iws" />
@@ -222,6 +212,34 @@
             </PATH_ELEMENT>
             <PATH_ELEMENT>
               <option name="myItemId" value="fivemin" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+          </PATH>
+          <PATH>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="fivemin" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="fivemin" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="templates" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+          </PATH>
+          <PATH>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="fivemin" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="fivemin" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="static" />
               <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
             </PATH_ELEMENT>
           </PATH>
@@ -546,15 +564,27 @@
       <option name="project" value="LOCAL" />
       <updated>1428042764503</updated>
     </task>
-    <option name="localTasksCounter" value="6" />
+    <task id="LOCAL-00006" summary="undid that">
+      <created>1428042962684</created>
+      <option name="number" value="00006" />
+      <option name="project" value="LOCAL" />
+      <updated>1428042962684</updated>
+    </task>
+    <task id="LOCAL-00007" summary="undid that">
+      <created>1428043035489</created>
+      <option name="number" value="00007" />
+      <option name="project" value="LOCAL" />
+      <updated>1428043035489</updated>
+    </task>
+    <option name="localTasksCounter" value="8" />
     <servers />
   </component>
   <component name="ToolWindowManager">
     <frame x="840" y="22" width="840" height="940" extended-state="0" />
     <editor active="false" />
     <layout>
-      <window_info id="Changes" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
-      <window_info id="Terminal" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.32900944" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
+      <window_info id="Changes" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.32900944" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
+      <window_info id="Terminal" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32900944" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32900944" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
       <window_info id="Database" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="-1" side_tool="false" content_ui="tabs" />
       <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.3278302" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
@@ -596,7 +626,8 @@
     <MESSAGE value="sort of works" />
     <MESSAGE value=" better" />
     <MESSAGE value="made fivemin dir" />
-    <option name="LAST_COMMIT_MESSAGE" value="made fivemin dir" />
+    <MESSAGE value="undid that" />
+    <option name="LAST_COMMIT_MESSAGE" value="undid that" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
