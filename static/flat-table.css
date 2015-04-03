@@ -9,11 +9,11 @@
   border-spacing: 0;
 }
 .flat-table th {
-  background-color: rgb(76, 76, 76);
-  color: white;
-  font-weight: bold;
   padding: 5px;
   text-align: center;
+}
+.flat-table th {
+  background: ;
 }
 .flat-table td {
   background-color: rgb(238, 238, 238);

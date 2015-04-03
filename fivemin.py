@@ -74,10 +74,19 @@ class Experiment(object):
                                       'symbol': self.syms[component]})
         self.series = self.series.values()
         self.expression = Expression(self.series)
+        # number ingredients according to final split order
+        val = 0
+        for i, split in enumerate(self.expression.uc_syms):
+            for ingredient in split:
+                ingredient_letter = str(ingredient[0])[0]
+                if i > 0:
+                    val += 1
+                self.syms_to_components[ingredient_letter].num = str(val)
+        self.water.num = '-1' # water always the same
         self.series = [self.series[r] for r in self.expression.sorted_order]
 
     def layout2(self, mode='organized'):
-        self.layout = Layout(self.expression, self.series, mode=mode)
+        self.layout = Layout(self.expression, self.series, mode=mode, experiment=self)
 
     def layout(self, plate_size=(8, 12)):
 
@@ -291,6 +300,7 @@ class Expression(object):
         self.sorted_order = [i for r, i in sorted(zip(rank, range(len(rank))))]
 
 
+
 class Instruction(object):
     def __init__(self, table, split_volume):
         self.table = np.round(table, 2).replace(to_replace=0, value=float('nan'))
@@ -323,20 +333,15 @@ class Instruction(object):
     def get_html(self, first=False):
         count = self.table.shape[1]
         html = BeautifulSoup()
-        table_html = BeautifulSoup(self.table.fillna('-').to_html())
-        table_html('table')[0]['class'] = 'instruction-table'
-        [th.__setitem__('class', 'instruction-row-header') for th in table_html.tbody('th')]
-        [th.__setitem__('component', c.html_tag) for th, c in zip(table_html.tbody('th'), self.table.index)]
-        [tr.__setitem__('component', c.html_tag) for tr, c in zip(table_html.tbody('tr'), self.table.index)]
-        [th.__setitem__('class', 'instruction-col-header') for th in table_html.thead('th')]
-        table_html('th')[0]['location'] = 'top-left'
-        [tr.find_all(True)[-1].__setitem__('location', 'right') for tr in table_html('tr')]
+        table_soup = BeautifulSoup(self.table.fillna('-').to_html())
+        table_soup('table')[0]['class'] = 'instruction-table'
+        label_html_table(table_soup, dataframe=self.table)
 
         if first:
             text1 = '<p class="instruction"> Make <span class="mastermix-count"> %d </span> ' \
                     'mastermix%s with the following:</p>' % (count, self.plural(count))
 
-            return text1 + str(table_html.body.table)
+            return text1 + str(table_soup.body.table)
 
         text1 = '<p class="instruction">Transfer <span class="split-volume">%.3g uL</span> ' \
                 'to each of <span class="split-count">%d</span> submix%s.</p>' % \
@@ -344,7 +349,7 @@ class Instruction(object):
         if count is 1:
             text1 = ''
         text2 = '<p class="instruction">Add the following to each submix:</p>'
-        return text1 + text2 + str(table_html.body.table)
+        return text1 + text2 + str(table_soup.body.table)
 
 
 class Concentration(object):
@@ -373,6 +378,7 @@ class Component(object):
         self.name = name
         self.rank = rank
         self.concentration = Concentration('1X') if concentration is None else concentration
+        self.num = 0
         self.html_tag = self.name.replace(" ", "_")
 
     def __repr__(self):
@@ -380,7 +386,7 @@ class Component(object):
 
 
 class Layout(object):
-    def __init__(self, expression, series, mode='organized', plate_size=(8, 12)):
+    def __init__(self, expression, series, mode='organized', plate_size=(8, 12), experiment=None):
         """Organize reactions into a plate format, based around blocks of size (m x n), where m, n
         are the last two non-singleton splits. In organized mode, group blocks into rows and columns by preceding
         splits. In compact mode, pack together blocks efficiently without regard for rows and columns.
@@ -396,7 +402,8 @@ class Layout(object):
         self.block_size = []
         self.split_size = expression.split_size
         self.plate_size = plate_size
-        self.filler = '.'
+        self.filler = ''
+        self.experiment = experiment
         if mode is 'organized':
             self.layout_organized()
         elif mode is 'compact':
@@ -448,8 +455,9 @@ class Layout(object):
             plate_vals = [plate % np.prod(subsplit[:i + 1]) for i in range(len(plate_splits))]
             this_conc = ['|'.join([str(z['concentration'][v]) for z in y])
                          for y, v in zip(plate_splits, plate_vals)]
-            this_col_index = pd.MultiIndex.from_product([this_conc] + conc(col_it),
-                                                        names=[plate_names] + names(col_it))
+            this_names = [plate_names] + names(col_it) if plate_names else names(col_it)
+            this_col_index = pd.MultiIndex.from_product(
+                [this_conc] + conc(col_it) if this_conc else conc(col_it), names=this_names)
             plate_dfs.append(pd.DataFrame(self.filler, index=row_index, columns=this_col_index))
 
         self.plate_dfs = plate_dfs
@@ -464,10 +472,60 @@ class Layout(object):
         # names = [n for s, n in zip(self.series, names) if len(s[0]['concentration']) > 1]
         # compact = pd.MultiIndex.from_product(iterables, names=names)
 
-
     def layout_compact(self):
         pass
 
+    def plates_html(self):
+        """Format list of plates in HTML.
+        :return:
+        """
+        plates = []
+        for i, plate in enumerate(self.plate_dfs):
+            cols = [c for c in self.experiment.components
+                    for name in plate.index.names if str(c) == name]
+            rows = [c for c in self.experiment.components
+                    for name in plate.columns.names if str(c) == name]
+
+            soup = BeautifulSoup(plate.to_html())
+            label_html_table(soup)
+            label_html_table_components(soup, rows, cols)
+            soup.table['id'] = 'plate-%d' % i
+            plates.append(str(soup.table))
+        return plates
+
+
+def label_html_table(table_soup, dataframe=None):
+    """Label parts of HTML table for easy styling. Soup in, soup out.
+    :param table_soup:
+    :param dataframe: pandas DataFrame containing component names
+    :return:
+    """
+    if dataframe is not None:
+        [tr.__setitem__('component', c.num) for tr, c in zip(table_soup.tbody('tr'), dataframe.index)]
+    table_soup('th')[0]['location'] = 'top-left'
+    [tr.find_all(True)[-1].__setitem__('location', 'right') for tr in table_soup('tr')]
+
+
+def label_html_table_components(table_soup, rows, cols):
+    """Label rows and columns by their corresponding component.
+    :param table_soup:
+    :param rows:
+    :param cols:
+    :return:
+    """
+    # required to count backwards due to HTML table cell span format
+    # go through column names (top side)
+    trows = table_soup.body.table.thead('tr')
+    for row, tr in zip(rows, trows):
+        tr['component'] = row.num
+    # go through index names (left side)
+    for tr in trows[len(rows):]:
+        for col, th in zip(cols, tr('th')):
+            th['component'] = col.num
+    for tr in table_soup.body.table.tbody('tr'):
+        for col, th in zip(reversed(cols), reversed(tr('th'))):
+            th['component'] = col.num
+    return
 
 def test(filename=test_form):
     form = pd.read_table(filename, sep=',')
@@ -478,6 +536,7 @@ def test(filename=test_form):
     exp.write_instructions()
     exp.print_instructions(mode='html')
     exp.layout2()
+    exp.layout.plates_html()
     layout = exp.layout.plate_dfs
     with open(filename[:-4] + '_output.txt', 'w') as fh:
         fh.writelines([a + '\n' for a in exp.print_instructions()])

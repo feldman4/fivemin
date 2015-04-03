@@ -35,13 +35,8 @@ def signup():
     experiment = fivemin.Experiment(df)
     experiment.write_instructions()
     experiment.layout2()
-    plates = []
-    print experiment.layout.plate_dfs
-    for i, layout in enumerate(experiment.layout.plate_dfs):
-        s = BeautifulSoup(layout.to_html())
-        s.table['id'] = 'plate-%d' % i
-        s.table['class'] = 'flat-table'
-        plates.append(s.table)
+    plates = experiment.layout.plates_html()
+
     instr = ''.join(['<li class="instruction">' + a + '</li>' for a in experiment.print_instructions(mode='html')])
     instr = '<ol class="instruction">' + instr + '</ol>'
     return render_template('layout.html', plates=plates, instructions=instr)
