@@ -6,6 +6,8 @@ path = os.path.dirname(__file__)
 
 test_files = glob.glob(path + '/test*.csv')
 
-for filename in test_files:
-    print filename
-    fivemin.test(filename=filename)
+fivemin.test()
+
+# for filename in test_files:
+#     print filename
+#     fivemin.test(filename=filename)

@@ -6,8 +6,9 @@ import sympy as sp
 from numpy.linalg import lstsq
 import sys
 from time import gmtime, strftime
+from bs4 import BeautifulSoup
 
-test_form = 'reaction_tests.csv'
+test_form = 'test_little_1.csv'
 output_csv = 'output2.csv'
 concentration_pattern = '([0-9]*\.*[0-9]*)(.*)'
 named_series_pattern = '((.*):)*(.*)'
@@ -53,6 +54,7 @@ class Experiment(object):
         """
         # unpack form
         for rank, name, stock in zip(form.fillna(value=0)['rank'], form['reagent'], form['stock']):
+            rank = float(rank)
             self.components.append(Component(name=name, rank=rank, concentration=Concentration(stock)))
             self.syms[self.components[-1]] = self.uc_alphabet.next()
         self.syms_to_components = {val: key for key, val in self.syms.items()}
@@ -138,11 +140,19 @@ class Experiment(object):
                         self.reaction_volume
             self.instructions.append(Instruction(tbl, split_vol))
 
-    def print_instructions(self):
+    def print_instructions(self, mode='plaintext'):
+        """After Instructions have been created, output in either plaintext or HTML. HTML output is a list of
+        raw HTML,suitable for inclusion in ordered list.
+        :param mode:
+        :return:
+        """
         lines = []
         for step, instr in enumerate(self.instructions):
-            text = instr.get_first_text() if step == 0 else instr.get_text()
-            lines.append('%d. ' % (step + 1) + text + '\n')
+            if mode == 'plaintext':
+                text = instr.get_plaintext(first=(step == 0))
+                lines.append('%d. ' % (step + 1) + text + '\n')
+            elif mode == 'html':
+                lines.append(instr.get_html(first=(step == 0)))
         return lines
 
 
@@ -292,8 +302,17 @@ class Instruction(object):
         self.split_label = 'M1'
         self.plural = lambda i: '' if i == 1 else 'es'
 
-    def get_text(self):
+    def html(self):
+        """Returns instructions in tagged HTML.
+        :return:
+        """
+
+    def get_plaintext(self, first=False):
         count = self.table.shape[1]
+        if first:
+            text1 = 'Make %d mastermix%s with the following:\n' % (count, self.plural(count))
+            return text1 + '\n' + str(self.table.fillna('-'))
+
         text1 = 'Transfer %.3g uL to each of %d submix%s.\n' % \
                 (self.split_volume, count, self.plural(count))
         if count is 1:
@@ -301,13 +320,31 @@ class Instruction(object):
         text2 = 'Add the following to each submix:\n'
         return text1 + text2 + '\n' + str(self.table.fillna('-'))
 
-    def get_first_text(self):
+    def get_html(self, first=False):
         count = self.table.shape[1]
-        text1 = 'Make %d mastermix%s with the following:\n' % (count, self.plural(count))
-        return text1 + '\n' + str(self.table.fillna('-'))
+        html = BeautifulSoup()
+        table_html = BeautifulSoup(self.table.fillna('-').to_html())
+        table_html('table')[0]['class'] = 'instruction-table'
+        [th.__setitem__('class', 'instruction-row-header') for th in table_html.tbody('th')]
+        [th.__setitem__('component', c.html_tag) for th, c in zip(table_html.tbody('th'), self.table.index)]
+        [tr.__setitem__('component', c.html_tag) for tr, c in zip(table_html.tbody('tr'), self.table.index)]
+        [th.__setitem__('class', 'instruction-col-header') for th in table_html.thead('th')]
+        table_html('th')[0]['location'] = 'top-left'
+        [tr.find_all(True)[-1].__setitem__('location', 'right') for tr in table_html('tr')]
 
-    def get_html(self):
-        pass
+        if first:
+            text1 = '<p class="instruction"> Make <span class="mastermix-count"> %d </span> ' \
+                    'mastermix%s with the following:</p>' % (count, self.plural(count))
+
+            return text1 + str(table_html.body.table)
+
+        text1 = '<p class="instruction">Transfer <span class="split-volume">%.3g uL</span> ' \
+                'to each of <span class="split-count">%d</span> submix%s.</p>' % \
+                (self.split_volume, count, self.plural(count))
+        if count is 1:
+            text1 = ''
+        text2 = '<p class="instruction">Add the following to each submix:</p>'
+        return text1 + text2 + str(table_html.body.table)
 
 
 class Concentration(object):
@@ -336,6 +373,7 @@ class Component(object):
         self.name = name
         self.rank = rank
         self.concentration = Concentration('1X') if concentration is None else concentration
+        self.html_tag = self.name.replace(" ", "_")
 
     def __repr__(self):
         return "%s" % self.name
@@ -358,6 +396,7 @@ class Layout(object):
         self.block_size = []
         self.split_size = expression.split_size
         self.plate_size = plate_size
+        self.filler = '.'
         if mode is 'organized':
             self.layout_organized()
         elif mode is 'compact':
@@ -406,21 +445,21 @@ class Layout(object):
         plate_names = names(plate_splits)
         for plate in range(num_plates):
             subsplit = [lens(p) for p in plate_splits]
-            plate_vals = [plate % np.prod(subsplit[:i+1]) for i in range(len(plate_splits))]
+            plate_vals = [plate % np.prod(subsplit[:i + 1]) for i in range(len(plate_splits))]
             this_conc = ['|'.join([str(z['concentration'][v]) for z in y])
                          for y, v in zip(plate_splits, plate_vals)]
             this_col_index = pd.MultiIndex.from_product([this_conc] + conc(col_it),
                                                         names=[plate_names] + names(col_it))
-            plate_dfs.append(pd.DataFrame(0, index=row_index, columns=this_col_index))
+            plate_dfs.append(pd.DataFrame(self.filler, index=row_index, columns=this_col_index))
 
         self.plate_dfs = plate_dfs
 
         # # format using MultiIndex
         # # generate compact, detailed DataFrames
         # iterables = [['/'.join([str(k['concentration'][i]) for k in s])
-        #               for i in range(len(s[0]['concentration']))] for s in self.series]
+        # for i in range(len(s[0]['concentration']))] for s in self.series]
         # names = ['/'.join([str(k['component']) for k in s])
-        #          for s in self.series]
+        # for s in self.series]
         # iterables = [it for s, it in zip(self.series, iterables) if len(s[0]['concentration']) > 1]
         # names = [n for s, n in zip(self.series, names) if len(s[0]['concentration']) > 1]
         # compact = pd.MultiIndex.from_product(iterables, names=names)
@@ -437,6 +476,7 @@ def test(filename=test_form):
                      pipette_loss=test_pipette_loss)
 
     exp.write_instructions()
+    exp.print_instructions(mode='html')
     exp.layout2()
     layout = exp.layout.plate_dfs
     with open(filename[:-4] + '_output.txt', 'w') as fh:

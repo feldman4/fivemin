@@ -1,0 +1,22 @@
+.flat-table {
+  display: block;
+  font-family: sans-serif;
+  -webkit-font-smoothing: antialiased;
+  font-size:14 px;
+  overflow: auto;
+  width: auto;
+  border-collapse: collapse;
+  border-spacing: 0;
+}
+.flat-table th {
+  background-color: rgb(76, 76, 76);
+  color: white;
+  font-weight: bold;
+  padding: 5px;
+  text-align: center;
+}
+.flat-table td {
+  background-color: rgb(238, 238, 238);
+  color: rgb(255, 255, 255);
+  padding: 10px;
+}
