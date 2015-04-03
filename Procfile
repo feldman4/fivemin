@@ -1,2 +1,2 @@
-web: gunicorn main:app --log-file
+web: gunicorn fivemin:app --log-file
 
