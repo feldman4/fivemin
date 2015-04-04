@@ -26,17 +26,21 @@ def changed():
 @app.route('/signup', methods=['POST'])
 def signup():
     form = request.json['data']
-    df = pd.DataFrame(form[1:], columns=form[0])
-    df = df.replace({None: float('nan')}).dropna()
-    df = df.replace({'': float('nan')})
-    print df
-    experiment = fivemin.Experiment(df)
-    experiment.write_instructions()
-    experiment.layout2()
-    plates = experiment.layout.plates_html()
+    try:
+        df = pd.DataFrame(form[1:], columns=form[0])
+        df = df.replace({None: float('nan')}).dropna()
+        df = df.replace({'': float('nan')})
+        print df
+        experiment = fivemin.Experiment(df)
+        experiment.write_instructions()
+        experiment.layout2()
+        plates = experiment.layout.plates_html()
 
-    instr = ''.join(['<li class="instruction">' + a + '</li>' for a in experiment.print_instructions(mode='html')])
-    instr = '<ol class="instruction">' + instr + '</ol>'
+        instr = ''.join(['<li class="instruction">' + a + '</li>' for a in experiment.print_instructions(mode='html')])
+        instr = '<ol class="instruction">' + instr + '</ol>'
+    except:
+        plates = []
+        instr = '<p> invalid form </p>'
     return render_template('layout.html', plates=plates, instructions=instr)
 
 
