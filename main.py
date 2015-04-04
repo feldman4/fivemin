@@ -5,6 +5,7 @@ from bs4 import BeautifulSoup
 
 app = Flask(__name__)
 # app.config['DEBUG'] = True
+app.config['PROPAGATE_EXCEPTIONS'] = True
 app.secret_key = 'mr. secrets'
 
 @app.route('/')
