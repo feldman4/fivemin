@@ -1,10 +1,10 @@
 1. Make 1 mastermix with the following:
 
                   1-1
-minimal buffer  70.28
+KAPA Fast        7.03
 EVA              7.03
 ROX              3.51
-KAPA Fast        7.03
+minimal buffer  70.28
 water           52.71
 
 2. Transfer 63.9 uL to each of 2 submixes.
