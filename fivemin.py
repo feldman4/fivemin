@@ -332,8 +332,7 @@ class Instruction(object):
 
     def get_html(self, first=False):
         count = self.table.shape[1]
-        html = BeautifulSoup()
-        table_soup = BeautifulSoup(self.table.fillna('-').to_html())
+        table_soup = BeautifulSoup(self.table.fillna('-').to_html(), 'html.parser')
         table_soup('table')[0]['class'] = 'instruction-table'
         label_html_table(table_soup, dataframe=self.table)
 
@@ -341,7 +340,7 @@ class Instruction(object):
             text1 = '<p class="instruction"> Make <span class="mastermix-count"> %d </span> ' \
                     'mastermix%s with the following:</p>' % (count, self.plural(count))
 
-            return text1 + str(table_soup.body.table)
+            return text1 + str(table_soup.table)
 
         text1 = '<p class="instruction">Transfer <span class="split-volume">%.3g uL</span> ' \
                 'to each of <span class="split-count">%d</span> submix%s.</p>' % \
@@ -349,7 +348,7 @@ class Instruction(object):
         if count is 1:
             text1 = ''
         text2 = '<p class="instruction">Add the following to each submix:</p>'
-        return text1 + text2 + str(table_soup.body.table)
+        return text1 + text2 + str(table_soup.table)
 
 
 class Concentration(object):
@@ -486,7 +485,7 @@ class Layout(object):
             rows = [c for c in self.experiment.components
                     for name in plate.columns.names if str(c) == name]
 
-            soup = BeautifulSoup(plate.to_html())
+            soup = BeautifulSoup(plate.to_html(), 'html.parser')
             label_html_table(soup)
             label_html_table_components(soup, rows, cols)
             soup.table['id'] = 'plate-%d' % i
@@ -502,7 +501,9 @@ def label_html_table(table_soup, dataframe=None):
     """
     if dataframe is not None:
         [tr.__setitem__('component', c.num) for tr, c in zip(table_soup.tbody('tr'), dataframe.index)]
-    table_soup('th')[0]['location'] = 'top-left'
+    topleft = table_soup('th')[0]
+    if topleft.string is None:
+        table_soup('th')[0]['location'] = 'top-left'
     [tr.find_all(True)[-1].__setitem__('location', 'right') for tr in table_soup('tr')]
 
 
@@ -515,14 +516,14 @@ def label_html_table_components(table_soup, rows, cols):
     """
     # required to count backwards due to HTML table cell span format
     # go through column names (top side)
-    trows = table_soup.body.table.thead('tr')
+    trows = table_soup.table.thead('tr')
     for row, tr in zip(rows, trows):
         tr['component'] = row.num
     # go through index names (left side)
     for tr in trows[len(rows):]:
         for col, th in zip(cols, tr('th')):
             th['component'] = col.num
-    for tr in table_soup.body.table.tbody('tr'):
+    for tr in table_soup.table.tbody('tr'):
         for col, th in zip(reversed(cols), reversed(tr('th'))):
             th['component'] = col.num
     return
@@ -537,9 +538,12 @@ def test(filename=test_form):
     exp.print_instructions(mode='html')
     exp.layout2()
     exp.layout.plates_html()
-    layout = exp.layout.plate_dfs
+    layout = [df.copy() for df in exp.layout.plate_dfs]
     with open(filename[:-4] + '_output.txt', 'w') as fh:
         fh.writelines([a + '\n' for a in exp.print_instructions()])
+        # output plate layouts with placeholder
+        for df in layout:
+            df[:] = '.'
         fh.writelines([df.to_string() + '\n\n' for df in layout])
 
     return exp

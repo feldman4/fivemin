@@ -35,12 +35,12 @@ template    1
 
 FWD primer                 1X 1X 3X
 REV primer nextera product         
-1X a1      0X                      
-           1X                      
-1X a2      0X                      
-           1X                      
-1X a3      0X                      
-           1X                      
-1X a2 P7   0X                      
-           1X                      
+1X a1      0X               .  .  .
+           1X               .  .  .
+1X a2      0X               .  .  .
+           1X               .  .  .
+1X a3      0X               .  .  .
+           1X               .  .  .
+1X a2 P7   0X               .  .  .
+           1X               .  .  .
 
