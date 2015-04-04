@@ -27,7 +27,6 @@ def changed():
 def signup():
     form = request.json['data']
     df = pd.DataFrame(form[1:], columns=form[0])
-    print df
     df = df.replace({None: float('nan')}).dropna()
     df = df.replace({'': float('nan')})
     print df

@@ -8,3 +8,4 @@ pandas==0.14.1
 scipy==0.13.3
 sympy==0.7.5
 gunicorn==19.3.0
+lxml==3.4.0
