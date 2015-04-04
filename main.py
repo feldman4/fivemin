@@ -4,14 +4,10 @@ import pandas as pd
 from bs4 import BeautifulSoup
 
 app = Flask(__name__)
-app.config['DEBUG'] = True
+# app.config['DEBUG'] = True
 app.secret_key = 'mr. secrets'
 
-# Note: We don't need to call run() since our application is embedded within
-# the App Engine WSGI application server.
-
-
-@app.route('/index')
+@app.route('/')
 def index():
     return render_template('input.html')
 
