@@ -41,12 +41,29 @@ class Experiment(object):
         self.expression = None
         self.uc_alphabet = (chr(i) for i in range(65, 65 + 26))
 
+        self.error_flag = False
+        self.error_rows = []
+
         self.layout = None
         self.plate_size = plate_size
         self.form_input = form.copy()
+        self.form = self.preprocess(form)
+        if self.error_flag is False:
+            self.setup(self.form)
 
-        self.setup(form)
         strftime("%Y-%m-%d %H:%M:%S", gmtime())
+
+    def preprocess(self, form):
+        """Check for errors, set flag and error message.
+        :param form:
+        :return:
+        """
+        clean_form = form.dropna(how='all')
+        nan_rows = clean_form[clean_form['reagent'].isnull() | clean_form['stock'].isnull()]
+        if not nan_rows.empty:
+            self.error_flag = True
+            self.error_rows = nan_rows
+        return clean_form
 
     def setup(self, form):
         """Extract Components and desired conditions from pandas DataFrame.

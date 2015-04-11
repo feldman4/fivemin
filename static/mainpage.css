@@ -3,6 +3,20 @@
 	margin: 0 auto;
 	width: 500px;
 }
+table.dataframe tr th
+{
+	border-collapse: collapse;
+	padding: 4px;
+	text-align: center;
+}
+table.dataframe
+{
+	border-collapse: collapse;
+}
+table.dataframe td
+{
+	text-align: center;
+}
 ol.instruction
 {
 	counter-reset: my-counter;

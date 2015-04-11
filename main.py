@@ -1,10 +1,11 @@
 from flask import Flask, render_template, url_for, session, request, redirect, g, flash
 import fivemin
 import pandas as pd
+import sys
 from bs4 import BeautifulSoup
 
 app = Flask(__name__)
-# app.config['DEBUG'] = True
+app.config['DEBUG'] = True
 app.config['PROPAGATE_EXCEPTIONS'] = True
 app.secret_key = 'mr. secrets'
 
@@ -32,15 +33,24 @@ def signup():
         df = df.replace({'': float('nan')})
         print df
         experiment = fivemin.Experiment(df, reaction_volume=10, pipette_loss=1.1)
-        experiment.write_instructions()
-        experiment.layout2()
-        plates = experiment.layout.plates_html()
+        if experiment.error_flag is False:
 
-        instr = ''.join(['<li class="instruction">' + a + '</li>' for a in experiment.print_instructions(mode='html')])
-        instr = '<ol class="instruction">' + instr + '</ol>'
+            experiment.write_instructions()
+            experiment.layout2()
+            plates = experiment.layout.plates_html()
+
+            instr = ''.join(['<li class="instruction">' + a + '</li>' for a in experiment.print_instructions(mode='html')])
+            instr = '<ol class="instruction">' + instr + '</ol>'
+        else:
+            instr = '<p>Error in following rows:\n' + \
+                    experiment.error_rows.fillna('-').to_html() + '</p>'
+            plates = []
+    # catch-all to prevent server from crashing
     except:
         plates = []
         instr = '<p> invalid form </p>'
+        print "Unexpected error:", sys.exc_info()[0]
+        raise
     return render_template('layout.html', plates=plates, instructions=instr)
 
 
