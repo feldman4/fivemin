@@ -42,7 +42,7 @@ def signup():
             instr = ''.join(['<li class="instruction">' + a + '</li>' for a in experiment.print_instructions(mode='html')])
             instr = '<ol class="instruction">' + instr + '</ol>'
         else:
-            instr = '<p>Error in following rows:\n' + \
+            instr = '<p>Error in the following rows:\n' + \
                     experiment.error_rows.fillna('-').to_html() + '</p>'
             plates = []
     # catch-all to prevent server from crashing

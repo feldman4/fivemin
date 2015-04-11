@@ -17,6 +17,11 @@ table.dataframe td
 {
 	text-align: center;
 }
+.htContextMenu
+{
+	color: black;
+}
+
 ol.instruction
 {
 	counter-reset: my-counter;
