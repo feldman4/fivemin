@@ -8,7 +8,7 @@ import sys
 from time import gmtime, strftime
 from bs4 import BeautifulSoup
 
-test_form = 'test_little_1.csv'
+test_form = 'static/default_experiment.csv'
 output_csv = 'output2.csv'
 concentration_pattern = '([0-9]*\.*[0-9]*)(.*)'
 named_series_pattern = '((.*):)*(.*)'
@@ -43,6 +43,7 @@ class Experiment(object):
 
         self.layout = None
         self.plate_size = plate_size
+        self.form_input = form.copy()
 
         self.setup(form)
         strftime("%Y-%m-%d %H:%M:%S", gmtime())

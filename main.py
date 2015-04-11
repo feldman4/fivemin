@@ -31,7 +31,7 @@ def signup():
         df = df.replace({None: float('nan')}).dropna()
         df = df.replace({'': float('nan')})
         print df
-        experiment = fivemin.Experiment(df)
+        experiment = fivemin.Experiment(df, reaction_volume=10, pipette_loss=1.1)
         experiment.write_instructions()
         experiment.layout2()
         plates = experiment.layout.plates_html()
