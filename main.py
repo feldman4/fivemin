@@ -13,11 +13,6 @@ app.secret_key = 'mr. secrets'
 def index():
     return render_template('input.html')
 
-@app.route('/<planet>')
-def eatshit(planet):
-    return 'Welcome to %s earthling' % planet
-
-
 @app.route('/changed')
 def changed():
     print render_template('input.html', layout=session['layout'])
@@ -26,13 +21,19 @@ def changed():
 
 @app.route('/signup', methods=['POST'])
 def signup():
-    form = request.json['data']
+    posted_data = request.json
+    form = posted_data['data']
+    try:
+        reaction_volume = float(posted_data['volume'])
+    except ValueError:
+        print 'volume input cannot be converted to float, defaults to 10 uL'
+        reaction_volume = 10
     try:
         df = pd.DataFrame(form[1:], columns=form[0])
         df = df.replace({None: float('nan')}).dropna()
         df = df.replace({'': float('nan')})
         print df
-        experiment = fivemin.Experiment(df, reaction_volume=10, pipette_loss=1.1)
+        experiment = fivemin.Experiment(df, reaction_volume=reaction_volume, pipette_loss=1.1)
         if experiment.error_flag is False:
 
             experiment.write_instructions()

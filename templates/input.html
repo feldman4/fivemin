@@ -21,7 +21,10 @@ $(document).ready(function () {
         type: "POST",
         url: "signup",
             contentType: 'application/json;charset=UTF-8',
-        data: JSON.stringify({data: window.hot.getData()}),
+        data: JSON.stringify({
+            data: window.hot.getData(),
+            volume: document.getElementById('reaction_volume').value
+        }),
         success: function(result, status) {$("#layout").html(result)}
         })
     }
@@ -34,5 +37,12 @@ $(document).ready(function () {
 {% block input %}
 <div id="input">
 <div id="input_table" class="handsontable"> </div>
+<div id="input_volume">
+    <form>
+        <br>
+        Reaction volume (uL):
+        <input type="text" id="reaction_volume" value="10">
+    </form>
+</div>
 </div>
 {% endblock input %}
