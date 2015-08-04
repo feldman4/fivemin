@@ -3,7 +3,6 @@
   <component name="ChangeListManager">
     <list default="true" id="95f9ecff-375d-482b-a3cd-4369467263d6" name="Default" comment="">
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/static/default_experiment.csv" afterPath="$PROJECT_DIR$/static/default_experiment.csv" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/main.py" afterPath="$PROJECT_DIR$/main.py" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
     </list>
     <ignored path="fivemin.iws" />
@@ -32,10 +31,10 @@
   </component>
   <component name="FileEditorManager">
     <leaf>
-      <file leaf-file-name="main.py" pinned="false" current-in-tab="true">
+      <file leaf-file-name="main.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/main.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state vertical-scroll-proportion="1.8897638">
+            <state vertical-scroll-proportion="-35.555557">
               <caret line="64" column="25" selection-start-line="64" selection-start-column="25" selection-end-line="64" selection-end-column="25" />
               <folding>
                 <element signature="e#0#87#0" expanded="true" />
@@ -44,11 +43,11 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="default_experiment.csv" pinned="false" current-in-tab="false">
+      <file leaf-file-name="default_experiment.csv" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/static/default_experiment.csv">
           <provider selected="true" editor-type-id="text-editor">
-            <state vertical-scroll-proportion="-3.6206896">
-              <caret line="7" column="16" selection-start-line="7" selection-start-column="16" selection-end-line="7" selection-end-column="16" />
+            <state vertical-scroll-proportion="0.2667984">
+              <caret line="9" column="51" selection-start-line="9" selection-start-column="51" selection-end-line="9" selection-end-column="51" />
               <folding />
             </state>
           </provider>
@@ -136,8 +135,8 @@
         <option value="$PROJECT_DIR$/fivemin.py" />
         <option value="$PROJECT_DIR$/requirements.txt" />
         <option value="$PROJECT_DIR$/templates/input.html" />
-        <option value="$PROJECT_DIR$/static/default_experiment.csv" />
         <option value="$PROJECT_DIR$/main.py" />
+        <option value="$PROJECT_DIR$/static/default_experiment.csv" />
       </list>
     </option>
   </component>
@@ -760,7 +759,13 @@
       <option name="project" value="LOCAL" />
       <updated>1438713665322</updated>
     </task>
-    <option name="localTasksCounter" value="24" />
+    <task id="LOCAL-00024" summary="opened host">
+      <created>1438715687542</created>
+      <option name="number" value="00024" />
+      <option name="project" value="LOCAL" />
+      <updated>1438715687542</updated>
+    </task>
+    <option name="localTasksCounter" value="25" />
     <servers />
   </component>
   <component name="TodoView" selected-index="0">
@@ -868,7 +873,8 @@
     <MESSAGE value="log errors" />
     <MESSAGE value="input pre-processing, display rows that fail" />
     <MESSAGE value="added volume form&#10;" />
-    <option name="LAST_COMMIT_MESSAGE" value="added volume form&#10;" />
+    <MESSAGE value="opened host" />
+    <option name="LAST_COMMIT_MESSAGE" value="opened host" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -1202,25 +1208,25 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/static/default_experiment.csv">
-      <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="-3.6206896">
-          <caret line="7" column="16" selection-start-line="7" selection-start-column="16" selection-end-line="7" selection-end-column="16" />
-          <folding />
-        </state>
-      </provider>
-      <provider editor-type-id="com.intellij.database.editor.CsvTableFileEditorProvider">
-        <state />
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/main.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="1.8897638">
+        <state vertical-scroll-proportion="-35.555557">
           <caret line="64" column="25" selection-start-line="64" selection-start-column="25" selection-end-line="64" selection-end-column="25" />
           <folding>
             <element signature="e#0#87#0" expanded="true" />
           </folding>
         </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/static/default_experiment.csv">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="0.2667984">
+          <caret line="9" column="51" selection-start-line="9" selection-start-column="51" selection-end-line="9" selection-end-column="51" />
+          <folding />
+        </state>
+      </provider>
+      <provider editor-type-id="com.intellij.database.editor.CsvTableFileEditorProvider">
+        <state />
       </provider>
     </entry>
   </component>

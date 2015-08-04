@@ -1,8 +1,10 @@
 rank,reagent,stock,experiment
-,KAPA Hifi,50X,
-,EVA,50X,
-,ROX,100X,
-,FWD primer,10X,"A: 1X N501, 2X N501, 1X N502, 2X N502"
-,REV primer,10X,"1X E701, 1X E702, 1X E703, 1X E704"
-3,template,10X,"1X sample_1, 1X sample_2, 1X H2O"
 ,KAPA buffer,5X,
+,EVA,50X,
+,ROX,100X,2X
+,,,
+,FWD primer,10X,
+2,REV primer,10X,"1X E701, 1X E702, 1X E703"
+,KAPA Hifi,50X,
+,,,
+3,template,20X,"1X sampleA, 1X sampleB, 1X sampleC"
